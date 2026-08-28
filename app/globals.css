@@ -1,0 +1,23 @@
+@import "tailwindcss";
+:root { --background: #f6f7f9; --foreground: #172033; }
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { min-height: 100vh; display: flex; flex-direction: column; background: var(--background); color: var(--foreground); font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", system-ui, sans-serif; }
+.topics-card-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1.25rem; }
+dl:has(> .record-rule-value) { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .5rem; }
+dl:has(> .record-result-metric) { gap: .5rem; }
+@media (min-width: 1024px) { dl:has(> .record-rule-value) { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+@media (min-width: 768px) { .topics-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (min-width: 1150px) { .topics-card-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1536px) { .topics-card-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+button, a, select, textarea { transition: color .18s, background-color .18s, border-color .18s, box-shadow .18s, transform .18s; }
+button, select { cursor: pointer; }
+:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
+@layer components {
+  .page-shell { @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8; }
+  .section-kicker { @apply mb-2 text-[11px] font-bold tracking-[0.2em] text-blue-700; }
+  .section-title { @apply text-2xl font-black tracking-tight text-slate-950 sm:text-3xl; }
+  .button-primary { @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 py-3 text-sm font-bold text-white shadow-sm hover:bg-blue-800 hover:shadow-md; }
+  .button-secondary { @apply inline-flex min-h-11 items-center justify-center rounded-lg border border-slate-300 bg-white px-5 py-3 text-sm font-bold text-slate-800 hover:border-slate-400 hover:bg-slate-50; }
+  .panel { @apply rounded-xl border border-slate-200 bg-white shadow-[0_1px_2px_rgba(15,23,42,.04)]; }
+}
