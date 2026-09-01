@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRef, useState, type FocusEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -108,7 +109,7 @@ export function SignupForm() {
       router.refresh();
       return;
     }
-    setMessage("確認メールを送信しました。メール内のリンクを開いて登録を完了してください。");
+    setMessage("登録手続きを受け付けました。未登録のメールアドレスの場合は、確認メールを送信しました。すでにアカウントをお持ちの場合は、ログインしてください。");
     setPending(false);
   }
 
@@ -125,7 +126,7 @@ export function SignupForm() {
       {passwordField("confirmation", "パスワード確認", showConfirmation, () => setShowConfirmation((value) => !value))}
       <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">討論ごとの発言名は、議題の設定によって別に設定できます。</p>
       {error && <p role="alert" className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2.5 text-sm font-semibold text-rose-700">{error}</p>}
-      {message && <p role="status" className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-sm font-semibold leading-6 text-emerald-700">{message}</p>}
+      {message && <div role="status" data-testid="signup-success" className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-sm font-semibold leading-6 text-emerald-700"><p>{message}</p><Link href="/login" className="mt-2 inline-flex font-black text-blue-700 underline decoration-blue-300 underline-offset-4 hover:text-blue-900">ログインする</Link></div>}
       <button type="submit" disabled={pending} className="button-primary w-full disabled:cursor-wait disabled:opacity-60">{pending ? "作成しています…" : "アカウントを作成"}</button>
     </form>
   );

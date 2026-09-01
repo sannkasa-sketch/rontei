@@ -51,3 +51,30 @@ test("認証カードは375px幅で横にはみ出さない", async ({ page }) =
   expect(sizes.body).toBeLessThanOrEqual(sizes.viewport);
   await expect(page.getByRole("button", { name: "アカウントを作成" })).toBeVisible();
 });
+
+test("メール確認待ちの登録受付は既存メールでも矛盾しない案内を表示する", async ({ page }) => {
+  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  await page.route("**/auth/v1/signup**", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ id: `00000000-0000-4000-8000-${Date.now().toString().slice(-12)}`, email: `masked-${unique}@example.com`, confirmation_sent_at: new Date().toISOString() }),
+    });
+  });
+
+  await page.goto("/signup");
+  const accountName = `受付案内${unique.slice(-6)}`;
+  await page.getByLabel("アカウント名", { exact: true }).fill(accountName);
+  await page.getByLabel("アカウント名", { exact: true }).blur();
+  await expect(page.getByText("このアカウント名は使用できます。")).toBeVisible();
+  await page.getByLabel("メールアドレス", { exact: true }).fill(`signup-message-${unique}@example.com`);
+  await page.getByLabel("パスワード", { exact: true }).fill("signup-message-password");
+  await page.getByLabel("パスワード確認", { exact: true }).fill("signup-message-password");
+  await page.getByRole("button", { name: "アカウントを作成" }).click();
+
+  const status = page.getByTestId("signup-success");
+  await expect(status).toContainText("登録手続きを受け付けました。");
+  await expect(status).toContainText("未登録のメールアドレスの場合は、確認メールを送信しました。");
+  await expect(status).toContainText("すでにアカウントをお持ちの場合は、ログインしてください。");
+  await expect(status.getByRole("link", { name: "ログインする" })).toHaveAttribute("href", "/login");
+});

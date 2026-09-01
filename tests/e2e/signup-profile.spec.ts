@@ -40,7 +40,10 @@ test("未使用名を確認して登録し、使用済み名とDB競合を拒否
     await expect(page.getByText(accountName, { exact: true }).first()).toBeVisible();
   } else {
     await expect(page).toHaveURL(/\/signup$/);
-    await expect(page.getByRole("status")).toContainText("確認メール");
+    const status = page.getByTestId("signup-success");
+    await expect(status).toContainText("登録手続きを受け付けました。");
+    await expect(status).toContainText("未登録のメールアドレスの場合は、確認メールを送信しました。");
+    await expect(status.getByRole("link", { name: "ログインする" })).toHaveAttribute("href", "/login");
   }
 
   const anon = createClient(supabaseUrl!, supabaseKey!, { auth: { persistSession: false } });
