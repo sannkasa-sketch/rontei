@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { AccountNameForm } from "@/components/AccountNameForm";
 import { CategoryBadge } from "@/components/CategoryBadge";
 import { CollapsibleActivityGrid } from "@/components/CollapsibleActivityGrid";
 import { TopicRemainingTime } from "@/components/TopicRemainingTime";
@@ -84,6 +83,6 @@ export default async function MyPage() {
     <section className="panel p-4 sm:p-5"><div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"><div><p className="text-xs font-bold text-slate-500">アカウント名</p><p className="mt-1 text-xl font-black text-slate-950">{profileResult.error ? "—" : profile?.account_name ?? "未設定"}</p></div><div className="rounded-xl bg-slate-50 px-4 py-2.5 sm:min-w-48"><p className="text-xs font-bold text-slate-500">評価ポイント</p><p className="mt-0.5 text-2xl font-black text-slate-950">{profileResult.error ? "—" : Number.isFinite(points) ? points.toLocaleString("ja-JP") : 0}<span className="ml-1 text-sm text-slate-500">pt</span></p><p className="mt-0.5 text-[11px] text-slate-500">発言への評価によって変動します。</p></div></div></section>
     {activities.failed && <p className="mt-6 rounded-xl border border-amber-100 bg-amber-50 px-5 py-4 text-sm font-semibold text-amber-800">参加した討論を取得できませんでした</p>}
     <div className="mt-8 space-y-10"><ActivitySection title="参加中の討論" items={activities.active} ended={false} referenceNow={referenceNow} /><ActivitySection title="過去の討論" items={activities.past} ended referenceNow={referenceNow} /></div>
-    <section className="panel mt-10 p-5 sm:p-6"><p className="section-kicker">ACCOUNT SETTINGS</p><h2 className="text-xl font-black text-slate-950">アカウント設定</h2><p className="mt-2 text-sm text-slate-500">公開時に使用するアカウント名を変更できます。</p>{!profileResult.error && <AccountNameForm currentName={profile?.account_name ?? ""} />}<form action={logout} className="mt-6 border-t border-slate-100 pt-5"><button type="submit" className="button-secondary w-full sm:w-auto">ログアウト</button></form></section>
+    <section className="panel mt-10 p-5 sm:p-6"><p className="section-kicker">ACCOUNT</p><h2 className="text-xl font-black text-slate-950">アカウント</h2><p className="mt-2 text-sm text-slate-500">アカウント名は新規登録時に設定され、登録後は変更できません。</p><form action={logout} className="mt-5 border-t border-slate-100 pt-5"><button type="submit" className="button-secondary w-full sm:w-auto">ログアウト</button></form></section>
   </main>;
 }
