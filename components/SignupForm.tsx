@@ -69,7 +69,9 @@ export function SignupForm() {
     event.preventDefault();
     setError("");
     setMessage("");
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
+    const emailInput = formElement.elements.namedItem("email");
     const accountName = String(form.get("accountName") ?? "").trim();
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
@@ -78,6 +80,7 @@ export function SignupForm() {
     if (!accountName) nextErrors.accountName = "アカウント名を入力してください。";
     else if (accountName.length < 2 || accountName.length > 30) nextErrors.accountName = "アカウント名は2〜30文字で入力してください。";
     if (!email) nextErrors.email = "メールアドレスを入力してください。";
+    else if (emailInput instanceof HTMLInputElement && emailInput.validity.typeMismatch) nextErrors.email = "正しい形式のメールアドレスを入力してください。";
     if (!password) nextErrors.password = "パスワードを入力してください。";
     else if (password.length < 6) nextErrors.password = "パスワードは6文字以上で入力してください。";
     if (!confirmation) nextErrors.confirmation = "確認用パスワードを入力してください。";

@@ -44,6 +44,24 @@ test("新規登録画面は必須項目とパスワード不一致を入力欄�
   await expect(page.getByRole("main").getByRole("link", { name: "ログイン" })).toHaveAttribute("href", "/login");
 });
 
+test("新規登録画面は不正なメール形式を認証APIへ送信しない", async ({ page }) => {
+  let signupApiCalled = false;
+  await page.route("**/auth/v1/signup**", async (route) => {
+    signupApiCalled = true;
+    await route.abort();
+  });
+
+  await page.goto("/signup");
+  await page.getByLabel("アカウント名", { exact: true }).fill("メール形式確認");
+  await page.getByLabel("メールアドレス", { exact: true }).fill("かさかさ");
+  await page.getByLabel("パスワード", { exact: true }).fill("valid-password");
+  await page.getByLabel("パスワード確認", { exact: true }).fill("valid-password");
+  await page.getByRole("button", { name: "アカウントを作成" }).click();
+
+  await expect(page.getByText("正しい形式のメールアドレスを入力してください。")).toBeVisible();
+  expect(signupApiCalled).toBe(false);
+});
+
 test("認証カードは375px幅で横にはみ出さない", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/signup");
