@@ -29,6 +29,41 @@ test("ログイン画面は項目別validationとパスワード表示切替を�
   await expect(page.getByRole("link", { name: "新規登録" })).toHaveAttribute("href", "/signup");
 });
 
+test("ログインはTurnstile未完了時に認証APIを呼ばない", async ({ page }) => {
+  await page.addInitScript(() => { window.__TURNSTILE_E2E_AUTO_VERIFY__ = false; });
+  let loginApiCalled = false;
+  await page.route("**/auth/v1/token**", async (route) => {
+    loginApiCalled = true;
+    await route.abort();
+  });
+
+  await page.goto("/login");
+  await page.getByTestId("login-email").fill("turnstile-check@example.com");
+  await page.getByTestId("login-password").fill("valid-password");
+  await page.getByTestId("login-submit").click();
+
+  await expect(page.getByText("セキュリティ確認を完了してください。")).toBeVisible();
+  expect(loginApiCalled).toBe(false);
+});
+
+test("ログインはcaptchaTokenを渡し、認証失敗後にTurnstileをresetする", async ({ page }) => {
+  let captchaToken: unknown;
+  await page.route("**/auth/v1/token**", async (route) => {
+    captchaToken = route.request().postDataJSON()?.gotrue_meta_security?.captcha_token;
+    await route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ message: "Invalid login credentials" }) });
+  });
+
+  await page.goto("/login");
+  await expect(page.getByTestId("turnstile-widget")).toHaveAttribute("data-turnstile-state", "verified");
+  await page.getByTestId("login-email").fill("turnstile-check@example.com");
+  await page.getByTestId("login-password").fill("valid-password");
+  await page.getByTestId("login-submit").click();
+
+  await expect(page.getByText("メールアドレスまたはパスワードを確認してください。")).toBeVisible();
+  await expect(page.getByTestId("turnstile-widget")).toHaveAttribute("data-turnstile-state", "unverified");
+  expect(captchaToken).toBe("e2e-turnstile-token");
+});
+
 test("新規登録画面は必須項目とパスワード不一致を入力欄付近に表示する", async ({ page }) => {
   await page.goto("/signup");
   await page.getByRole("button", { name: "アカウントを作成" }).click();
@@ -62,11 +97,72 @@ test("新規登録画面は不正なメール形式を認証APIへ送信しな�
   expect(signupApiCalled).toBe(false);
 });
 
+test("新規登録はTurnstile未完了時にsignup APIを呼ばない", async ({ page }) => {
+  await page.addInitScript(() => { window.__TURNSTILE_E2E_AUTO_VERIFY__ = false; });
+  let signupApiCalled = false;
+  await page.route("**/auth/v1/signup**", async (route) => {
+    signupApiCalled = true;
+    await route.abort();
+  });
+
+  await page.goto("/signup");
+  await page.getByLabel("アカウント名", { exact: true }).fill("Turnstile未完了確認");
+  await page.getByLabel("メールアドレス", { exact: true }).fill("turnstile-signup@example.com");
+  await page.getByLabel("パスワード", { exact: true }).fill("valid-password");
+  await page.getByLabel("パスワード確認", { exact: true }).fill("valid-password");
+  await page.getByRole("button", { name: "アカウントを作成" }).click();
+
+  await expect(page.getByText("セキュリティ確認を完了してください。")).toBeVisible();
+  expect(signupApiCalled).toBe(false);
+});
+
+test("新規登録はcaptchaTokenをsignup APIへ渡す", async ({ page }) => {
+  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  let captchaToken: unknown;
+  await page.route("**/auth/v1/signup**", async (route) => {
+    captchaToken = route.request().postDataJSON()?.gotrue_meta_security?.captcha_token;
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({ id: `00000000-0000-4000-8000-${Date.now().toString().slice(-12)}`, email: `masked-${unique}@example.com`, confirmation_sent_at: new Date().toISOString() }),
+    });
+  });
+
+  await page.goto("/signup");
+  await page.getByLabel("アカウント名", { exact: true }).fill(`Captcha確認${unique.slice(-6)}`);
+  await page.getByLabel("メールアドレス", { exact: true }).fill(`captcha-${unique}@example.com`);
+  await page.getByLabel("パスワード", { exact: true }).fill("valid-password");
+  await page.getByLabel("パスワード確認", { exact: true }).fill("valid-password");
+  await page.getByRole("button", { name: "アカウントを作成" }).click();
+
+  await expect(page.getByTestId("signup-success")).toBeVisible();
+  expect(captchaToken).toBe("e2e-turnstile-token");
+});
+
+test("新規登録はCAPTCHA失敗後にTurnstileをresetする", async ({ page }) => {
+  const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  await page.route("**/auth/v1/signup**", async (route) => {
+    await route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ message: "captcha verification process failed" }) });
+  });
+
+  await page.goto("/signup");
+  await expect(page.getByTestId("turnstile-widget")).toHaveAttribute("data-turnstile-state", "verified");
+  await page.getByLabel("アカウント名", { exact: true }).fill(`Captcha失敗${unique.slice(-6)}`);
+  await page.getByLabel("メールアドレス", { exact: true }).fill(`captcha-failure-${unique}@example.com`);
+  await page.getByLabel("パスワード", { exact: true }).fill("valid-password");
+  await page.getByLabel("パスワード確認", { exact: true }).fill("valid-password");
+  await page.getByRole("button", { name: "アカウントを作成" }).click();
+
+  await expect(page.getByText("セキュリティ確認に失敗しました。もう一度お試しください。")).toBeVisible();
+  await expect(page.getByTestId("turnstile-widget")).toHaveAttribute("data-turnstile-state", "unverified");
+});
+
 test("認証カードは375px幅で横にはみ出さない", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
   await page.goto("/signup");
   const sizes = await page.evaluate(() => ({ body: document.body.scrollWidth, viewport: window.innerWidth }));
   expect(sizes.body).toBeLessThanOrEqual(sizes.viewport);
+  await expect(page.getByTestId("turnstile-widget")).toBeVisible();
   await expect(page.getByRole("button", { name: "アカウントを作成" })).toBeVisible();
 });
 

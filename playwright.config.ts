@@ -9,6 +9,9 @@ if (existsSync(testEnvPath)) {
   for (const [key, value] of Object.entries(testEnvironment)) process.env[key] = value;
 }
 
+// Browser tests use a local deterministic widget instead of an external Cloudflare challenge.
+process.env.NEXT_PUBLIC_TURNSTILE_TEST_MODE = "true";
+
 export default defineConfig({
   testDir: "./tests/e2e",
   // Most authenticated scenarios share the two dedicated Supabase test users.

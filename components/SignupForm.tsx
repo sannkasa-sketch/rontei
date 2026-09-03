@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRef, useState, type FocusEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { TurnstileWidget, type TurnstileWidgetHandle } from "@/components/TurnstileWidget";
 
 type FieldName = "accountName" | "email" | "password" | "confirmation";
 type FieldErrors = Partial<Record<FieldName, string>>;
@@ -28,6 +29,8 @@ export function SignupForm() {
   const availabilityRequest = useRef(0);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileWidgetHandle>(null);
 
   async function checkAccountName(rawName: string, showRequestError = true) {
     const accountName = rawName.trim();
@@ -87,6 +90,10 @@ export function SignupForm() {
     else if (password !== confirmation) nextErrors.confirmation = "パスワードが一致しません。";
     setFieldErrors(nextErrors);
     if (Object.keys(nextErrors).length) return;
+    if (!turnstileToken) {
+      setError("セキュリティ確認を完了してください。");
+      return;
+    }
 
     setPending(true);
     const supabase = createClient();
@@ -95,15 +102,18 @@ export function SignupForm() {
       setPending(false);
       return;
     }
-    const { data, error: authError } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth/confirm`, data: { account_name: accountName } } });
+    const { data, error: authError } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: `${window.location.origin}/auth/confirm`, data: { account_name: accountName }, captchaToken: turnstileToken } });
     if (authError) {
       const normalizedError = authError.message.toLowerCase();
-      if (normalizedError.includes("database error") || normalizedError.includes("saving new user")) {
+      if (normalizedError.includes("captcha") || normalizedError.includes("turnstile") || normalizedError.includes("challenge")) {
+        setError("セキュリティ確認に失敗しました。もう一度お試しください。");
+      } else if (normalizedError.includes("database error") || normalizedError.includes("saving new user")) {
         const stillAvailable = await checkAccountName(accountName, false);
         setError(stillAvailable === false ? "このアカウント名はすでに使用されています。" : getSignupError(authError.message));
       } else {
         setError(getSignupError(authError.message));
       }
+      turnstileRef.current?.reset();
       setPending(false);
       return;
     }
@@ -127,6 +137,7 @@ export function SignupForm() {
       <div><label htmlFor="signup-email" className="block text-sm font-bold text-slate-700">メールアドレス</label><input id="signup-email" name="email" type="email" autoComplete="email" aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? "signup-email-error" : undefined} className={inputClass} />{fieldErrors.email && <p id="signup-email-error" role="alert" className="mt-2 text-sm font-semibold text-rose-700">{fieldErrors.email}</p>}</div>
       {passwordField("password", "パスワード", showPassword, () => setShowPassword((value) => !value))}
       {passwordField("confirmation", "パスワード確認", showConfirmation, () => setShowConfirmation((value) => !value))}
+      <TurnstileWidget ref={turnstileRef} onTokenChange={setTurnstileToken} />
       <p className="rounded-lg bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-500">討論ごとの発言名は、議題の設定によって別に設定できます。</p>
       {error && <p role="alert" className="rounded-lg border border-rose-100 bg-rose-50 px-3 py-2.5 text-sm font-semibold text-rose-700">{error}</p>}
       {message && <div role="status" data-testid="signup-success" className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2.5 text-sm font-semibold leading-6 text-emerald-700"><p>{message}</p><Link href="/login" className="mt-2 inline-flex font-black text-blue-700 underline decoration-blue-300 underline-offset-4 hover:text-blue-900">ログインする</Link></div>}
