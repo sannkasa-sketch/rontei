@@ -15,7 +15,7 @@ function getSignupError(message: string) {
   const value = message.toLowerCase();
   if (value.includes("account_name") || value.includes("account name") || value.includes("profiles_account_name")) return "このアカウント名はすでに使用されています。";
   if (value.includes("already registered") || value.includes("already been registered") || (value.includes("email") && value.includes("unique"))) return "このメールアドレスはすでに登録されています。";
-  if (value.includes("password") || value.includes("weak")) return "パスワードは6文字以上で入力してください。";
+  if (value.includes("password") || value.includes("weak")) return "パスワードは8文字以上で入力してください。";
   return "処理中にエラーが発生しました。もう一度お試しください。";
 }
 
@@ -85,7 +85,7 @@ export function SignupForm() {
     if (!email) nextErrors.email = "メールアドレスを入力してください。";
     else if (emailInput instanceof HTMLInputElement && emailInput.validity.typeMismatch) nextErrors.email = "正しい形式のメールアドレスを入力してください。";
     if (!password) nextErrors.password = "パスワードを入力してください。";
-    else if (password.length < 6) nextErrors.password = "パスワードは6文字以上で入力してください。";
+    else if (password.length < 8) nextErrors.password = "パスワードは8文字以上で入力してください。";
     if (!confirmation) nextErrors.confirmation = "確認用パスワードを入力してください。";
     else if (password !== confirmation) nextErrors.confirmation = "パスワードが一致しません。";
     setFieldErrors(nextErrors);

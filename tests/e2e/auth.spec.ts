@@ -72,6 +72,11 @@ test("新規登録画面は必須項目とパスワード不一致を入力欄�
 
   await page.getByLabel("アカウント名", { exact: true }).fill("テスト利用者");
   await page.getByLabel("メールアドレス", { exact: true }).fill("validation@example.com");
+  await page.getByLabel("パスワード", { exact: true }).fill("1234567");
+  await page.getByLabel("パスワード確認", { exact: true }).fill("1234567");
+  await page.getByRole("button", { name: "アカウントを作成" }).click();
+  await expect(page.getByText("パスワードは8文字以上で入力してください。")).toBeVisible();
+
   await page.getByLabel("パスワード", { exact: true }).fill("password-one");
   await page.getByLabel("パスワード確認", { exact: true }).fill("password-two");
   await page.getByRole("button", { name: "アカウントを作成" }).click();
