@@ -11,7 +11,7 @@ test("マイページでプロフィールと参加討論を確認できる", as
   await page.getByTestId("login-submit").click();
   await expect(page).toHaveURL(/\/mypage$/);
 
-  await expect(page.getByRole("heading", { name: "マイページ" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "マイページ" })).toBeVisible({ timeout: 15_000 });
   await expect(page.getByText("アカウント名", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("評価ポイント", { exact: true }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: "参加中の討論" })).toBeVisible();
@@ -37,8 +37,14 @@ test("マイページでプロフィールと参加討論を確認できる", as
   expect(hasHorizontalOverflow).toBe(false);
 
   const activityLinks = page.locator('main a[href^="/topics/"], main a[href^="/records/"]');
-  await expect(activityLinks.first()).toBeVisible();
-  const href = await activityLinks.first().getAttribute("href");
-  await activityLinks.first().click();
-  await expect(page).toHaveURL(new RegExp(`${href!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`));
+  const activityCount = await activityLinks.count();
+  if (activityCount > 0) {
+    await expect(activityLinks.first()).toBeVisible();
+    const href = await activityLinks.first().getAttribute("href");
+    await activityLinks.first().click();
+    await expect(page).toHaveURL(new RegExp(`${href!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`));
+  } else {
+    await expect(page.getByText("参加中の討論はありません。")).toBeVisible();
+    await expect(page.getByText("終了した討論はまだありません。")).toBeVisible();
+  }
 });

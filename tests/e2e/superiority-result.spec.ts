@@ -34,7 +34,8 @@ test.describe("@slow 優劣の公式最終結果", () => {
     await page.getByTestId("main-post-submit").click();
     await expect(page.locator("article").filter({ hasText: yesBody }).first()).toBeVisible();
 
-    const user2Context = await browser.newContext({ baseURL: "http://localhost:3000", timezoneId: "Asia/Tokyo" });
+    const e2eOrigin = new URL(page.url()).origin;
+    const user2Context = await browser.newContext({ baseURL: e2eOrigin, timezoneId: "Asia/Tokyo" });
     const user2Page = await user2Context.newPage();
     try {
       await login(user2Page, user2Email!, user2Password!);

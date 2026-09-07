@@ -66,7 +66,8 @@ test("未使用名を確認して登録し、使用済み名とDB競合を拒否
   expect(profileCount.error).toBeNull();
   expect(profileCount.count).toBe(1);
 
-  const duplicateContext = await browser.newContext({ baseURL: "http://localhost:3000" });
+  const e2eOrigin = new URL(page.url()).origin;
+  const duplicateContext = await browser.newContext({ baseURL: e2eOrigin });
   const duplicatePage = await duplicateContext.newPage();
   await duplicatePage.goto("/signup");
   await duplicatePage.getByLabel("アカウント名", { exact: true }).fill(accountName);
