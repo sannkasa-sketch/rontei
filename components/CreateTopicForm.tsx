@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition, type ChangeEvent, type FormEvent } from "react";
+import { useRef, useState, useTransition, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createTopic } from "@/app/topics/new/actions";
 import { debateTypeOptions } from "@/lib/topic-display";
@@ -28,7 +28,8 @@ export function CreateTopicForm() {
   const [debateType, setDebateType] = useState("exploration");
   const [nameMode, setNameMode] = useState("topic_alias");
   const [category, setCategory] = useState<TopicCategory>("other");
-  const [endsAtValue, setEndsAtValue] = useState("");
+  const [formOpenedAt] = useState(() => Date.now());
+  const [endsAtValue, setEndsAtValue] = useState(() => toLocalDateTimeInput(new Date(formOpenedAt + 3 * 24 * 60 * 60 * 1000)));
   const [endsAtError, setEndsAtError] = useState("");
   const [allowFactionChange, setAllowFactionChange] = useState(false);
   const [allowMultipleFactions, setAllowMultipleFactions] = useState(false);
@@ -46,12 +47,8 @@ export function CreateTopicForm() {
   const [creatorSpeakerName, setCreatorSpeakerName] = useState(() => generateRandomSpeakerName());
   const [formatHelp, setFormatHelp] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
-  const fixedDateMin = toLocalDateTimeInput(new Date(Date.now() + 60_000));
-  const fixedDateMax = toLocalDateTimeInput(new Date(Date.now() + 14 * 24 * 60 * 60 * 1000));
-
-  useEffect(() => {
-    setEndsAtValue((current) => current || toLocalDateTimeInput(new Date(Date.now() + 3 * 24 * 60 * 60 * 1000)));
-  }, []);
+  const fixedDateMin = toLocalDateTimeInput(new Date(formOpenedAt + 60_000));
+  const fixedDateMax = toLocalDateTimeInput(new Date(formOpenedAt + 14 * 24 * 60 * 60 * 1000));
 
   function updateFaction(id: number, name: string) {
     setFactions((current) => current.map((faction) => faction.id === id ? { ...faction, name } : faction));

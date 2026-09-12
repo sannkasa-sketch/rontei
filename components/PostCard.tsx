@@ -204,7 +204,7 @@ export function PostCard({ post, topicSlug, postingFactions, primaryFactionId, a
       observer?.disconnect();
       const stickyTop = mediaQuery.matches ? 80 : 108;
       observer = new IntersectionObserver(([entry]) => {
-        const sentinelTop = entry.boundingClientRect.top;
+        void entry;
         publishCurrentMainPost(stickyTop);
       }, { rootMargin: `-${stickyTop}px 0px 0px 0px`, threshold: 0 });
       observer.observe(stickySentinelRef.current!);
@@ -295,7 +295,7 @@ export function PostCard({ post, topicSlug, postingFactions, primaryFactionId, a
         </>
       )}
 
-      <article id={`post-${post.id}`} data-testid="post-card" data-post-id={post.id} data-relation-type={post.relationType} data-sticky-main={stickyMain && isMainPost ? "true" : undefined} data-sticky-active={isStickyMain ? "true" : undefined} onMouseEnter={() => publishHoveredTrail(currentTrail)} onMouseLeave={() => publishHoveredTrail([])} onClick={togglePinned} onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && event.target === event.currentTarget) { event.preventDefault(); toggleCurrentPin(); } }} tabIndex={0} aria-expanded={isPinned} className={isMainPost
+      <article id={`post-${post.id}`} data-testid="post-card" data-post-id={post.id} data-relation-type={post.relationType} data-sticky-main={stickyMain && isMainPost ? "true" : undefined} data-sticky-active={isStickyMain ? "true" : undefined} onMouseEnter={() => publishHoveredTrail(currentTrail)} onMouseLeave={() => publishHoveredTrail([])} onClick={togglePinned} onKeyDown={(event) => { if ((event.key === "Enter" || event.key === " ") && event.target === event.currentTarget) { event.preventDefault(); toggleCurrentPin(); } }} tabIndex={0} className={isMainPost
         ? `group relative scroll-mt-44 overflow-hidden rounded-2xl border sm:scroll-mt-40 ${stickyMain ? "sticky top-[6.75rem] z-30 sm:top-20" : ""} ${isStickyMain ? "border-slate-300 px-2 py-1.5 shadow-md backdrop-blur-sm sm:px-4 sm:py-3" : "border-slate-200 px-3.5 py-5 shadow-sm sm:p-6"} ${factionTint} transition-[padding,box-shadow,border-color] duration-200`
         : `group relative scroll-mt-44 rounded-xl border border-l-[3px] border-slate-200 sm:scroll-mt-40 ${factionTint} px-2.5 py-4 shadow-[0_2px_10px_rgba(15,23,42,.04)] sm:p-5 ${relation?.card ?? "border-l-slate-300"}`
       }>

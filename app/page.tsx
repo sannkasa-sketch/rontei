@@ -8,7 +8,7 @@ import { formatTopicEndDate, getDebateTypeLabel, getTopicStatusLabel, isTopicEnd
 import { createTopicPublicStatsMap, emptyTopicPublicStats } from "@/lib/topic-public-stats";
 import { createTopicRecentActivityMap, emptyTopicRecentActivity } from "@/lib/topic-recent-activity";
 
-export const metadata: Metadata = { title: { absolute: "論庭" }, description: "違いが芽吹く、対話の庭。" };
+export const metadata: Metadata = { title: { absolute: "論庭" }, description: "違いが芽吹く、対話の庭。", alternates: { canonical: "/" } };
 export const dynamic = "force-dynamic";
 
 type HomeTopic = { id: string; slug: string; title: string; summary: string | null; debate_type: string; category: string | null; status: string; ends_at: string | null; created_at: string };

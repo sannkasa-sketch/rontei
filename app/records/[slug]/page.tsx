@@ -11,7 +11,6 @@ import type { FactionChangeEvent } from "@/lib/faction-events";
 import { buildPostTree, type Post } from "@/lib/posts";
 import { createMyReactionMap, createReactionCountMap, type MyPostReactionRow, type PostReactionCountsRow } from "@/lib/post-reactions";
 import { createClient } from "@/lib/supabase/server";
-import { getTopicCategoryPresentation } from "@/lib/topic-category";
 import { formatTopicEndDate, getDebateTypeLabel, isTopicEnded } from "@/lib/topic-display";
 import { nameModeLabels, type NameMode, type WerewolfRevealMode } from "@/lib/topic-rules";
 import type { WerewolfRevealPair } from "@/lib/werewolf-reveal";
@@ -161,7 +160,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const topic = await getRecordTopic(slug);
   if (!topic) return { title: "討論記録" };
   const description = topic.summary ?? "終了した討論の公開議事録です。";
-  return { title: `${topic.title} — 議事録`, description, openGraph: { type: "article", siteName: "論庭", title: topic.title, description } };
+  return { title: `${topic.title} — 議事録`, description, alternates: { canonical: `/records/${encodeURIComponent(slug)}` }, openGraph: { type: "article", siteName: "論庭", title: topic.title, description } };
 }
 
 async function getRecordData(topicId: string, debateType: string) {
@@ -253,7 +252,6 @@ export default async function RecordDetailPage({ params }: { params: Promise<{ s
   const revealResult = data.rules.name_mode === "werewolf" && data.rules.werewolf_reveal_mode === "after_end"
     ? await getRevealPairs(topic.id)
     : { pairs: [], failed: false };
-  const categoryStyle = getTopicCategoryPresentation(topic.category);
   const factionNames = new Map(data.factions.map((faction) => [String(faction.id), faction.name]));
   const postTree = buildPostTree(data.posts, factionNames, createReactionCountMap(data.counts), createMyReactionMap(data.myReactions), !data.countsFailed);
   const postNumbers = new Map(postTree.map((post, index) => [post.id, postTree.length - index]));

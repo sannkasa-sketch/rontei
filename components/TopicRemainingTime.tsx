@@ -28,9 +28,12 @@ export function TopicRemainingTime({ endsAt, isEnded = false, referenceNow, clas
   const [nowMs, setNowMs] = useState(Number.isFinite(initialNow) ? initialNow : 0);
 
   useEffect(() => {
-    setNowMs(Date.now());
+    const timeout = window.setTimeout(() => setNowMs(Date.now()), 0);
     const interval = window.setInterval(() => setNowMs(Date.now()), 60_000);
-    return () => window.clearInterval(interval);
+    return () => {
+      window.clearTimeout(timeout);
+      window.clearInterval(interval);
+    };
   }, []);
 
   const remaining = getTopicRemainingTime(endsAt, nowMs, isEnded);

@@ -9,7 +9,7 @@ import { formatTopicEndDate, getDebateTypeLabel } from "@/lib/topic-display";
 import { clampPage, parsePositivePage, parseTopicCategoryFilter, topicsPageSize, type TopicCategoryFilter } from "@/lib/topics-list";
 import { createTopicPublicStatsMap, emptyTopicPublicStats } from "@/lib/topic-public-stats";
 
-export const metadata: Metadata = { title: "議事録・記録" };
+export const metadata: Metadata = { title: "議事録・記録", alternates: { canonical: "/records" } };
 export const dynamic = "force-dynamic";
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 type Topic = { id: string; slug: string; title: string; summary: string | null; debate_type: string; category: string | null; status: string; ends_at: string | null; effective_ends_at: string | null };

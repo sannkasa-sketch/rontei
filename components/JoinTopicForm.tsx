@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef, useState, useTransition, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { joinTopic, joinWerewolfTopic } from "@/app/topics/actions";
 import { generateRandomSpeakerName } from "@/lib/speaker-name";
@@ -12,26 +12,19 @@ type FactionOption = { id: string; name: string };
 
 export function JoinTopicForm({ slug, factions, nameMode, accountName, debateType, shuffleFactions = false }: { slug: string; factions: FactionOption[]; nameMode: NameMode; accountName: string | null; debateType: string; shuffleFactions?: boolean }) {
   const router = useRouter();
-  const initialized = useRef(false);
-  const [speakerName, setSpeakerName] = useState("");
-  const [werewolfNames, setWerewolfNames] = useState<[string, string]>(["", ""]);
+  const [speakerName, setSpeakerName] = useState(() => nameMode === "topic_alias" ? generateRandomSpeakerName() : "");
+  const [werewolfNames, setWerewolfNames] = useState<[string, string]>(() => {
+    if (nameMode !== "werewolf") return ["", ""];
+    const first = generateRandomSpeakerName();
+    let second = generateRandomSpeakerName();
+    while (second === first) second = generateRandomSpeakerName();
+    return [first, second];
+  });
   const [primaryFactionId, setPrimaryFactionId] = useState(factions[0]?.id ?? "");
   const [message, setMessage] = useState("");
   const [pending, startTransition] = useTransition();
   const accountNameMissing = nameMode === "account" && !accountName;
   const fixedRoles = isFixedRoleDebateType(debateType);
-
-  useEffect(() => {
-    if (initialized.current) return;
-    initialized.current = true;
-    if (nameMode === "topic_alias") setSpeakerName(generateRandomSpeakerName());
-    if (nameMode === "werewolf") {
-      const first = generateRandomSpeakerName();
-      let second = generateRandomSpeakerName();
-      while (second === first) second = generateRandomSpeakerName();
-      setWerewolfNames([first, second]);
-    }
-  }, [nameMode]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

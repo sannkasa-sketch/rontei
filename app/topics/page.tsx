@@ -9,7 +9,7 @@ import { createTopicRecentActivityMap, emptyTopicRecentActivity } from "@/lib/to
 import { getDebateTypeLabel, getTopicStatusLabel } from "@/lib/topic-display";
 import { buildTopicsHref, clampPage, parsePositivePage, parseTopicCategoryFilter, parseTopicSort, topicsPageSize, type TopicCategoryFilter, type TopicSort } from "@/lib/topics-list";
 
-export const metadata: Metadata = { title: "議題一覧" };
+export const metadata: Metadata = { title: "議題一覧", alternates: { canonical: "/topics" } };
 export const dynamic = "force-dynamic";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;

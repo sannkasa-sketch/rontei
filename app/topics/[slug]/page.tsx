@@ -128,7 +128,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const topic = await getTopicBySlug(slug);
   if (!topic) return { title: "討論" };
   const description = topic.summary ?? "論庭の公開討論です。";
-  return { title: topic.title, description, openGraph: { type: "article", siteName: "論庭", title: topic.title, description } };
+  return { title: topic.title, description, alternates: { canonical: `/topics/${encodeURIComponent(slug)}` }, openGraph: { type: "article", siteName: "論庭", title: topic.title, description } };
 }
 
 async function getTopicPublicStats(topicId: DatabaseTopic["id"]): Promise<{ stats: TopicPublicStats; failed: boolean }> {
@@ -523,16 +523,6 @@ export default async function DebatePage(props: {
     limitReached ? "発言回数の上限に達しています" : null,
     factionSelectionUnavailable ? "所属派閥を確認できません" : null,
   ].filter(Boolean).join("／") || undefined;
-  const joinedIdentity = membership.status === "joined"
-    ? nameMode === "anonymous"
-      ? { label: "表示名", value: "匿名" }
-      : nameMode === "account"
-        ? { label: "表示名", value: membership.accountName ?? "未設定" }
-        : nameMode === "topic_alias"
-          ? { label: "発言名", value: membership.member.speaker_name ?? "未設定" }
-          : null
-    : null;
-
   const debateType = getDebateTypeLabel(topic.debate_type);
   const isRecruitment = topic.debate_type === "recruitment";
   const endsAt = formatTopicEndDate(topic.ends_at) ?? "未定";
