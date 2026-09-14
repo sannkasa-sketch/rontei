@@ -6,6 +6,7 @@ import { createTopic } from "@/app/topics/new/actions";
 import { debateTypeOptions } from "@/lib/topic-display";
 import { getTopicCategoryLabel, topicCategoryOptions, type TopicCategory } from "@/lib/topic-category";
 import { debateFormatDetails, getDefaultFactionNames, isFixedRoleDebateType } from "@/lib/debate-format";
+import { factionPresets } from "@/lib/faction-presets";
 import { generateRandomSpeakerName } from "@/lib/speaker-name";
 
 type FactionInput = { id: number; name: string };
@@ -46,12 +47,26 @@ export function CreateTopicForm() {
   const [showLiveVoteCounts, setShowLiveVoteCounts] = useState(false);
   const [creatorSpeakerName, setCreatorSpeakerName] = useState(() => generateRandomSpeakerName());
   const [formatHelp, setFormatHelp] = useState<string | null>(null);
+  const [selectedPresetId, setSelectedPresetId] = useState("");
   const [pending, startTransition] = useTransition();
   const fixedDateMin = toLocalDateTimeInput(new Date(formOpenedAt + 60_000));
   const fixedDateMax = toLocalDateTimeInput(new Date(formOpenedAt + 14 * 24 * 60 * 60 * 1000));
 
   function updateFaction(id: number, name: string) {
     setFactions((current) => current.map((faction) => faction.id === id ? { ...faction, name } : faction));
+  }
+
+  function applyFactionPreset() {
+    const preset = factionPresets.find((item) => item.id === selectedPresetId);
+    if (!preset || isFixedRoleDebateType(debateType) || (nameMode === "werewolf" && preset.factions.length !== 2)) return;
+
+    const defaults = getDefaultFactionNames(debateType);
+    const isUneditedDefault = factions.length === 2 && factions.every((faction, index) => faction.name === defaults[index]);
+    if (!isUneditedDefault && !window.confirm("現在の派閥設定をプリセットで置き換えます。よろしいですか？")) return;
+
+    const firstId = nextFactionId.current;
+    nextFactionId.current += preset.factions.length;
+    setFactions(preset.factions.map((name, index) => ({ id: firstId + index, name })));
   }
 
   function changeNameMode(mode: string) {
@@ -188,7 +203,26 @@ export function CreateTopicForm() {
 
     <section className="panel p-5 sm:p-7"><p className="section-kicker">FORMAT</p><h2 className="text-lg font-black text-slate-900">2. 討論形式</h2><select name="debateType" value={debateType} onChange={(event) => changeDebateType(event.target.value)} className="sr-only" aria-label="討論タイプ">{debateTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><div className="mt-5 grid gap-2 sm:grid-cols-2">{[{ value: "exploration", description: "答えを決めず、複数の意見から考えを深める" }, { value: "binary", description: "複数の意見から最終的な多数を決める" }, { value: "superiority", description: "発言評価から派閥の順位を決める" }, { value: "casual", description: "勝敗を決めず気軽に話す" }, { value: "recruitment", description: "提案を募る。返信枝は作らない" }].map((option) => <div key={option.value} className="group relative"><button type="button" aria-pressed={debateType === option.value} onClick={() => changeDebateType(option.value)} onFocus={() => setFormatHelp(option.value)} onMouseEnter={() => setFormatHelp(option.value)} onMouseLeave={() => setFormatHelp((current) => current === option.value ? null : current)} className={`w-full rounded-lg border p-3 pr-11 text-left ${debateType === option.value ? "border-blue-400 bg-blue-50 ring-1 ring-blue-200" : "border-slate-200 bg-white hover:border-slate-300"}`}><span className="block text-sm font-black text-slate-800">{debateTypeOptions.find((item) => item.value === option.value)?.label}</span><span className="mt-1 block text-xs leading-5 text-slate-500">{option.description}</span></button><button type="button" aria-label={`${debateTypeOptions.find((item) => item.value === option.value)?.label}の詳細`} aria-expanded={formatHelp === option.value} onClick={() => setFormatHelp((current) => current === option.value ? null : option.value)} className="absolute right-3 top-3 grid size-6 place-items-center rounded-full border border-slate-300 bg-white text-xs font-black text-slate-500">i</button>{formatHelp === option.value && <div role="tooltip" className="absolute left-0 top-full z-20 mt-2 w-full rounded-lg border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-700 shadow-lg">{debateFormatDetails[option.value]}{option.value === "superiority" && <p className="mt-2 font-semibold">納得 +2 ／ 不服 0 ／ 懐疑 -1 ／ 微妙 0</p>}</div>}</div>)}</div>{isFixedRoleDebateType(debateType) && <p className="mt-4 rounded-lg bg-blue-50 px-4 py-3 text-xs font-semibold leading-5 text-blue-800">作成者は「{factions[0]?.name || "主催"}」、ほかの参加者は「{factions[1]?.name || "参加者"}」へ自動的に所属します。</p>}{debateType === "binary" && <p className="mt-4 rounded-lg bg-blue-50 px-4 py-3 text-xs font-semibold leading-5 text-blue-800">白黒形式は2派閥以上で作成できます。派閥移動はON、複数所属と討論開始後の派閥追加はOFFです。</p>}{debateType === "superiority" && <div className="mt-4 rounded-lg bg-blue-50 px-4 py-3 text-xs leading-5 text-blue-800"><p className="font-semibold">発言が獲得したリアクションポイントの合計で優劣を決定します。</p><p className="mt-1">納得 +2 ／ 不服 0 ／ 懐疑 -1 ／ 微妙 0</p></div>}</section>
 
-    <section className="panel p-5 sm:p-7"><p className="section-kicker">FACTIONS</p><h2 className="text-lg font-black text-slate-900">派閥</h2><p className="mt-2 text-sm text-slate-500">{isFixedRoleDebateType(debateType) ? "名称は編集できますが、作成者側と参加者側の2役に固定されます。" : debateType === "binary" ? "白黒形式では2つ以上の派閥を設定できます。討論開始後の派閥追加はできません。" : nameMode === "werewolf" ? "人狼記名では2つの派閥を設定してください。" : "優劣形式では2つ以上の派閥を設定してください。3つ以上の案も比較できます。"}</p><div className="mt-5 space-y-3">{factions.map((faction, index) => <div key={faction.id} className="flex items-end gap-2"><label className="flex-1 text-xs font-bold text-slate-600">派閥 {index + 1}<input value={faction.name} onChange={(event) => updateFaction(faction.id, event.target.value)} className={inputClass} /></label>{!isFixedRoleDebateType(debateType) && <button type="button" disabled={nameMode === "werewolf" || factions.length <= 2} onClick={() => setFactions((current) => current.filter((item) => item.id !== faction.id))} className="mb-0 min-h-11 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-500 hover:border-rose-200 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-30" aria-label={`派閥${index + 1}を削除`}>削除</button>}</div>)}</div>{(debateType === "superiority" || debateType === "binary") && nameMode !== "werewolf" && <button type="button" onClick={() => { const id = nextFactionId.current++; setFactions((current) => [...current, { id, name: "" }]); }} className="button-secondary mt-4">＋ 派閥を追加</button>}<label className={`mt-5 flex items-start gap-3 rounded-lg border p-4 ${nameMode === "werewolf" ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60" : "cursor-pointer border-slate-200 bg-white"}`}><input name="shuffleFactions" type="checkbox" data-testid="shuffle-factions" checked={shuffleFactions} disabled={nameMode === "werewolf"} onChange={(event) => setShuffleFactions(event.target.checked)} className="mt-1 size-4 accent-blue-700" /><span><span className="block text-sm font-black text-slate-800">シャッフル</span><span className="mt-1 block text-xs leading-5 text-slate-500">参加時に登録された派閥の中からランダムに1つの派閥へ所属します。</span>{nameMode === "werewolf" && <span className="mt-1 block text-xs font-bold text-amber-700">人狼記名では使用できません。</span>}</span></label></section>
+    <section className="panel p-5 sm:p-7">
+      <p className="section-kicker">FACTIONS</p>
+      <h2 className="text-lg font-black text-slate-900">派閥</h2>
+      <p className="mt-2 text-sm text-slate-500">{isFixedRoleDebateType(debateType) ? "名称は編集できますが、作成者側と参加者側の2役に固定されます。" : debateType === "binary" ? "白黒形式では2つ以上の派閥を設定できます。討論開始後の派閥追加はできません。" : nameMode === "werewolf" ? "人狼記名では2つの派閥を設定してください。" : "優劣形式では2つ以上の派閥を設定してください。3つ以上の案も比較できます。"}</p>
+      <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <label htmlFor="faction-preset" className="text-xs font-bold text-slate-700">派閥プリセット</label>
+        <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+          <select id="faction-preset" data-testid="faction-preset" value={selectedPresetId} onChange={(event) => setSelectedPresetId(event.target.value)} disabled={isFixedRoleDebateType(debateType)} className="min-h-11 flex-1 rounded-lg border border-slate-300 bg-white px-3 text-sm disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400">
+            <option value="">プリセットなし</option>
+            {factionPresets.map((preset) => <option key={preset.id} value={preset.id} disabled={nameMode === "werewolf" && preset.factions.length !== 2}>{preset.label}（{preset.factions.length}件）</option>)}
+          </select>
+          <button type="button" data-testid="apply-faction-preset" onClick={applyFactionPreset} disabled={!selectedPresetId || isFixedRoleDebateType(debateType) || nameMode === "werewolf"} className="button-secondary disabled:cursor-not-allowed disabled:opacity-50">適用</button>
+        </div>
+        {isFixedRoleDebateType(debateType) && <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">この討論形式では主催・参加者の2役割固定のため、派閥プリセットは使用できません。</p>}
+        {nameMode === "werewolf" && <p className="mt-2 text-xs font-semibold leading-5 text-slate-500">人狼記名では2派閥限定のため、3件以上のプリセットは使用できません。</p>}
+      </div>
+      <div className="mt-5 max-h-[32rem] space-y-3 overflow-y-auto pr-1" data-testid="faction-input-list">{factions.map((faction, index) => <div key={faction.id} className="flex items-end gap-2"><label className="flex-1 text-xs font-bold text-slate-600">派閥 {index + 1}<input value={faction.name} onChange={(event) => updateFaction(faction.id, event.target.value)} className={inputClass} /></label>{!isFixedRoleDebateType(debateType) && <button type="button" disabled={nameMode === "werewolf" || factions.length <= 2} onClick={() => setFactions((current) => current.filter((item) => item.id !== faction.id))} className="mb-0 min-h-11 rounded-lg border border-slate-200 px-3 text-sm font-bold text-slate-500 hover:border-rose-200 hover:text-rose-700 disabled:cursor-not-allowed disabled:opacity-30" aria-label={`派閥${index + 1}を削除`}>削除</button>}</div>)}</div>
+      {(debateType === "superiority" || debateType === "binary") && nameMode !== "werewolf" && <button type="button" onClick={() => { const id = nextFactionId.current++; setFactions((current) => [...current, { id, name: "" }]); }} className="button-secondary mt-4">＋ 派閥を追加</button>}
+      <label className={`mt-5 flex items-start gap-3 rounded-lg border p-4 ${nameMode === "werewolf" ? "cursor-not-allowed border-slate-200 bg-slate-50 opacity-60" : "cursor-pointer border-slate-200 bg-white"}`}><input name="shuffleFactions" type="checkbox" data-testid="shuffle-factions" checked={shuffleFactions} disabled={nameMode === "werewolf"} onChange={(event) => setShuffleFactions(event.target.checked)} className="mt-1 size-4 accent-blue-700" /><span><span className="block text-sm font-black text-slate-800">シャッフル</span><span className="mt-1 block text-xs leading-5 text-slate-500">参加時に登録された派閥の中からランダムに1つの派閥へ所属します。</span>{nameMode === "werewolf" && <span className="mt-1 block text-xs font-bold text-amber-700">人狼記名では使用できません。</span>}</span></label>
+    </section>
 
     <div className="pt-3"><p className="section-kicker">DISCUSSION RULES</p><h2 className="section-title">討論ルール</h2><p className="mt-2 text-sm leading-6 text-slate-500">議論の進め方、参加条件、発言時のルールを設定します。</p></div>
 
